@@ -54,6 +54,8 @@ static char	*read_buffer(int fd, char **line, char *buffer, char **remainder)
 	ssize_t	bytes_read;
 	char	*newline_pos;
 
+	if (BUFFER_SIZE <= 0)
+		return (NULL);
 	bytes_read = read(fd, buffer, BUFFER_SIZE);
 	while (bytes_read > 0)
 	{
@@ -117,7 +119,7 @@ char	*get_next_line(int fd)
 int main()
 {
 	int i = 1;
-	int fd = open("test.txt", O_RDONLY);
+	int fd = open("testfile.txt", O_RDONLY);
 	if (fd == -1)
 	{
 		perror("Erro ao abrir o arquivo");
