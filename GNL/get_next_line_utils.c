@@ -14,7 +14,7 @@
 
 size_t	ft_strlen(const char *s)
 {
-	size_t	count;
+	int	count;
 
 	count = 0;
 	while (*s != '\0')
@@ -25,44 +25,31 @@ size_t	ft_strlen(const char *s)
 	return (count);
 }
 
-char	*ft_strchr(const char *s, int c)
+char	*ft_substr(char const *s, unsigned int start, size_t len)
 {
-	char	*ptr;
+	char	*z;
+	size_t	s_len;
 
-	ptr = (char *)s;
-	while (*ptr != '\0')
+	if (!s)
+		return (NULL);
+	s_len = ft_strlen(s);
+	if (start >= s_len)
 	{
-		if (*ptr == (char)c)
-		{
-			return (ptr);
-		}
-		ptr++;
+		z = malloc(1);
+		if (z == NULL)
+			return (NULL);
+		z[0] = '\0';
+		return (z);
 	}
-	if (c == '\0')
-		return (ptr);
-	return (NULL);
-}
-
-size_t	ft_strlcpy(char *dst, const char *src, size_t size)
-{
-	size_t		len;
-	char		*d;
-	const char	*s;
-
-	s = src;
-	len = 0;
-	d = dst;
-	if (size > 0)
+	if (len > s_len - start)
 	{
-		while (*s && len < size - 1)
-		{
-			*d++ = *s;
-			s++;
-			len++;
-		}
-		*d = '\0';
+		len = s_len - start;
 	}
-	return (ft_strlen(src));
+	z = malloc(len + 1);
+	if (z == NULL)
+		return (NULL);
+	ft_strlcpy(z, (s + start), (len + 1));
+	return (z);
 }
 
 char	*ft_strjoin(char const *s1, char const *s2)
@@ -88,23 +75,42 @@ char	*ft_strjoin(char const *s1, char const *s2)
 	return (z);
 }
 
-char	*ft_strdup(const char *src)
+size_t	ft_strlcpy(char *dst, const char *src, size_t size)
 {
-	int		len;
-	char	*dest;
+	size_t		len;
+	char		*d;
+	const char	*s;
 
+	s = src;
 	len = 0;
-	while (src[len])
+	d = dst;
+	if (size > 0)
 	{
-		len++;
+		while (*s && len < size - 1)
+		{
+			*d++ = *s;
+			s++;
+			len++;
+		}
+		*d = '\0';
 	}
-	dest = malloc(len + 1);
-	if (dest == NULL)
-		return (NULL);
-	while (*src)
+	return (ft_strlen(src));
+}
+
+char	*ft_strchr(const char *s, int c)
+{
+	char	*ptr;
+
+	ptr = (char *)s;
+	while (*ptr != '\0')
 	{
-		*dest++ = *src++;
+		if (*ptr == (char)c)
+		{
+			return (ptr);
+		}
+		ptr++;
 	}
-	*dest = '\0';
-	return (dest - len);
+	if (c == '\0')
+		return (ptr);
+	return (NULL);
 }

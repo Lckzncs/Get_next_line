@@ -3,123 +3,116 @@
 /*                                                        :::      ::::::::   */
 /*   get_next_line.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ludo-nas <ludo-nas@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ludo-nas <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/11/05 19:14:36 by ludo-nas          #+#    #+#             */
-/*   Updated: 2024/11/14 18:50:56 by ludo-nas         ###   ########.fr       */
+/*   Created: 2024/11/27 20:52:38 by ludo-nas          #+#    #+#             */
+/*   Updated: 2024/11/29 18:40:09 by ludo-nas         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "get_next_line.h"
 
-static char	*append_buffer_to_line(char **line, char *buffer)
+static	void	*ft_calloc(size_t count, size_t size)
+{
+	void	*ptr;
+	size_t	total_size;
+	size_t	i;
+
+	total_size = count * size;
+	ptr = malloc(total_size);
+	if (!ptr)
+		return (NULL);
+	i = 0;
+	while (i < total_size)
+	{
+		((unsigned char *)ptr)[i] = 0;
+		i++;
+	}
+	return (ptr);
+}
+
+static	char	*ft_append_and_free(char *line, char *buffer)
 {
 	char	*temp;
 
-	temp = ft_strjoin(*line, buffer);
-	free(*line);
+	temp = ft_strjoin(line, buffer);
+	free(line);
 	return (temp);
 }
 
-static char	*handle_remainder(char **line, char **remainder)
+static	char	*read_line(int fd, char *line)
 {
-	char	*newline_pos;
-	char	*temp;
-
-	newline_pos = ft_strchr(*remainder, '\n');
-	if (newline_pos)
-	{
-		*newline_pos = '\0';
-		temp = ft_strjoin(*line, *remainder);
-		free(*line);
-		*line = temp;
-		temp = ft_strdup(newline_pos + 1);
-		free(*remainder);
-		*remainder = temp;
-		return (*line);
-	}
-	else
-	{
-		temp = ft_strjoin(*line, *remainder);
-		free(*line);
-		*line = temp;
-		free(*remainder);
-		*remainder = NULL;
-	}
-	return (NULL);
-}
-
-static char	*read_buffer(int fd, char **line, char *buffer, char **remainder)
-{
+	char	*buffer;
 	ssize_t	bytes_read;
-	char	*newline_pos;
 
 	if (BUFFER_SIZE <= 0)
 		return (NULL);
-	bytes_read = read(fd, buffer, BUFFER_SIZE);
-	while (bytes_read > 0)
-	{
-		buffer[bytes_read] = '\0';
-		newline_pos = ft_strchr(buffer, '\n');
-		if (newline_pos)
-		{
-			*newline_pos = '\0';
-			*line = append_buffer_to_line(line, buffer);
-			*remainder = ft_strdup(newline_pos + 1);
-			return (*line);
-		}
-		*line = append_buffer_to_line(line, buffer);
-		bytes_read = read(fd, buffer, BUFFER_SIZE);
-	}
-	if (**line != '\0')
-		return (*line);
-	free(*line);
-	*line = NULL;
-	return (*line);
-}
-
-static char	*process_buffer(int fd, char **line, char *buffer, char **remainder)
-{
-	char	*result;
-
-	if (*remainder)
-	{
-		result = handle_remainder(line, remainder);
-		if (result)
-			return (result);
-	}
-	return (read_buffer(fd, line, buffer, remainder));
-}
-
-char	*get_next_line(int fd)
-{
-	static char	*remainder = NULL;
-	char		*line;
-	char		*buffer;
-
-	if (fd < 0 || BUFFER_SIZE <= 0)
-		return (NULL);
-	line = malloc(1);
-	if (!line)
-		return (NULL);
-	line[0] = '\0';
-	buffer = malloc(BUFFER_SIZE + 1);
+	buffer = ft_calloc(BUFFER_SIZE + 1, sizeof(char));
 	if (!buffer)
-	{
-		free(line);
 		return (NULL);
+	while (!ft_strchr(line, '\n'))
+	{
+		bytes_read = read(fd, buffer, BUFFER_SIZE);
+		if (bytes_read <= 0)
+		{
+			free(buffer);
+			if (*line)
+				return (line);
+			free(line);
+			return (NULL);
+		}
+		buffer[bytes_read] = '\0';
+		line = ft_append_and_free(line, buffer);
 	}
-	line = process_buffer(fd, &line, buffer, &remainder);
 	free(buffer);
 	return (line);
 }
 
-#include <stdio.h>
+static	char	*process_remainder(char *line)
+{
+	char	*newline_pos;
+	char	*remainder;
+	size_t	len;
 
-int main()
+	remainder = NULL;
+	newline_pos = ft_strchr(line, '\n');
+	if (newline_pos)
+	{
+		len = newline_pos - line + 1;
+		remainder = ft_substr(line, len, ft_strlen(line) - len);
+		line[len] = '\0';
+	}
+	return (remainder);
+}
+
+char	*get_next_line(int fd)
+{
+	char		*line;
+	static char	*remainder = NULL;
+
+	if (fd < 0 || BUFFER_SIZE <= 0)
+		return (NULL);
+	if (remainder)
+	{
+		line = ft_strjoin(remainder, "");
+		free(remainder);
+		remainder = NULL;
+	}
+	else
+	{
+		line = ft_calloc(1, 1);
+	}
+	line = read_line(fd, line);
+	if (!line)
+		return (NULL);
+	remainder = process_remainder(line);
+	return (line);
+}
+
+/* int main()
 {
 	int i = 1;
-	int fd = open("testfile.txt", O_RDONLY);
+	int fd = open("test.txt", O_RDONLY);
 	if (fd == -1)
 	{
 		perror("Erro ao abrir o arquivo");
@@ -128,10 +121,10 @@ int main()
 	char *line;
 	while ((line = get_next_line(fd)) != NULL)
 	{
-		printf("line[%d]: %s\n", i, line);
+		printf("line[%d]:%s", i, line);
 		free(line);
 		i++;
 	}
 	close(fd);
 	return 0;
-}
+} */
